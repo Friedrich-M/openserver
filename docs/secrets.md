@@ -38,9 +38,22 @@ is files rather than variables:
 | Carried | Why |
 | --- | --- |
 | `~/.secrets.env` | The API tokens themselves |
-| `~/.git-credentials` | `git push` works on arrival — no re-auth to GitHub or the Hub |
+| `~/.git-credentials` | HTTPS tokens for GitHub or the Hub. Git reads the file only through the `store` credential helper, which the bundle does not set ([below](#git-credentials)) |
 | `~/.config/rclone/rclone.conf` | Moving data works on arrival |
 | `~/.ssh/id_*` | **Opt-in** (`--with-ssh`). One key on every machine means one stolen machine burns them all; a per-machine key added to GitHub is better |
+
+<a id="git-credentials"></a>**`~/.git-credentials` needs a helper.** The bundle sets no credential
+helper, because a plaintext store is not a default worth sharing, and
+without one git never reads the file. To have pushes work on arrival, opt
+in once per machine:
+
+```bash
+git config --file ~/.gitconfig.local credential.helper store
+```
+
+`tools/github.sh` sets single keys in that file and keeps the rest, so the
+line survives later runs. Otherwise use a per-machine SSH key or gh as the
+helper (`tools/github.sh`, README "GitHub").
 
 Deliberately left out: `~/.codex/auth.json` and `~/.claude.json` are session
 credentials that expire (the latter is mostly project state) — `codex login`

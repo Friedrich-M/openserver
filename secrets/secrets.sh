@@ -7,8 +7,9 @@
 #   secrets/secrets.sh status
 #
 # Not just ~/.secrets.env: the things that make a new machine immediately
-# useful are files, not environment variables. `git push` needs
-# ~/.git-credentials, moving data needs rclone.conf. Those go in too.
+# useful are files, not environment variables. HTTPS pushes can use
+# ~/.git-credentials (through git's store helper, which the user opts into:
+# docs/secrets.md), moving data needs rclone.conf. Those go in too.
 #
 # WHAT IS DELIBERATELY LEFT OUT
 #   ~/.ssh/id_*        opt-in (--with-ssh). Copying one private key to every
