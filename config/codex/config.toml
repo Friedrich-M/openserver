@@ -1,0 +1,7 @@
+# config/codex/config.toml — seeded to ~/.codex/config.toml on a new machine.
+#
+# Only the settings worth having everywhere; the model and reasoning effort
+# come from server.json (codex.model, codex.model_reasoning_effort), and Codex
+# picks its own when they are unset. Codex appends its own
+# [projects."<path>"] trust entries as you use it; those are machine-local, so
+# this file is copied once and then left alone rather than kept in sync.

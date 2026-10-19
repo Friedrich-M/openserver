@@ -1,0 +1,92 @@
+# CI for the bundle: tests/check.sh on Linux and on macOS (bash 3.2), then a
+# real install with tests/container.sh in Ubuntu and Rocky Linux containers
+# (Rocky is the clusters' RHEL family) and on a macOS runner (Homebrew), and
+# the README's one-command install on a bare Ubuntu, exactly as a user runs it. Nothing here holds or reads a credential beyond the
+# job's own GITHUB_TOKEN, which keeps tools/cli.sh clear of the API's
+# anonymous rate limit.
+name: check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Tools the checks use
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq zsh shellcheck
+          else
+            brew install shellcheck
+          fi
+      - name: tests/check.sh
+        # /bin/bash on macOS is 3.2, the oldest bash the scripts promise to run on.
+        run: /bin/bash tests/check.sh
+
+  install:
+    needs: offline
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-latest, image: "ubuntu:24.04" }
+          - { runner: ubuntu-latest, image: "rockylinux:9" }
+          - { runner: macos-latest, image: "" }
+    runs-on: ${{ matrix.runner }}
+    # An empty image runs on the runner itself (macOS).
+    container: ${{ matrix.image }}
+    steps:
+      - name: A bare machine's packages
+        if: matrix.image != ''
+        run: |
+          if command -v apt-get >/dev/null; then
+            apt-get update -qq
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+              git curl ca-certificates zsh tmux unzip python3 xz-utils hostname
+          else
+            dnf install -y -q git zsh tmux unzip python3 hostname which tar gzip \
+              findutils diffutils procps-ng ncurses
+          fi
+      - uses: actions/checkout@v5
+      - name: tests/container.sh
+        env:
+          SRV_TEST_DISPOSABLE: "1"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tests/container.sh
+
+  quickstart:
+    needs: offline
+    runs-on: ubuntu-latest
+    container: ubuntu:24.04
+    steps:
+      # No checkout: the README's one-liner fetches everything itself.
+      - name: A bare machine's packages
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git curl ca-certificates zsh unzip python3 hostname
+      - name: The README's one-command install
+        env:
+          # Only needed while the repository is private; harmless after.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$GITHUB_SHA/install/bootstrap.sh" |
+            bash -s -- "$GITHUB_REPOSITORY" --ref="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" \
+              --yes --no-github --no-conda --no-gdrive --no-secrets
+      - name: A new shell has what it promised
+        shell: bash
+        run: |
+          zsh -ic srvinfo </dev/null
+          for c in nvim rg fd fzf bat eza gh; do bash -lc "command -v $c" </dev/null || { echo "missing: $c"; exit 1; }; done
+          tail -n 1 ~/.bashrc ~/.zshrc

@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# pre-push — do not let a weak-marked credential blob reach a remote.
+#
+# make-bundle.sh already keeps such a blob out of the published zip. git is the
+# other way it could reach the internet, and it is the easier one to do by
+# accident: `git push` on a repo whose GitHub visibility was set to public
+# months ago, and the ciphertext is world-readable with a passphrase its own
+# strength check called weak.
+#
+# The blob is git-ignored by default, so this only ever fires in a fork that
+# chose to track it. Installed by setup.sh. Bypass deliberately with
+# SRV_ALLOW_WEAK_PUSH=1, which is the right thing on a private repo.
+
+set -euo pipefail
+
+[ -n "${SRV_ALLOW_WEAK_PUSH:-}" ] && exit 0
+
+# What is pushed is commits, not the working tree: check the blob in every
+# commit about to leave, from the refs git hands the hook on stdin
+# (<local ref> <local sha> <remote ref> <remote sha>). A blob removed from the
+# index since is still in the history being pushed.
+zero=0000000000000000000000000000000000000000
+weak=""
+while read -r _ local_sha _ remote_sha; do
+    case "$local_sha" in "$zero"|"") continue ;; esac     # a deleted ref
+    if [ "$remote_sha" = "$zero" ]; then
+        range="$local_sha --not --remotes"                # a new ref: what the remote lacks
+    else
+        range="$remote_sha..$local_sha"
+    fi
+    # shellcheck disable=SC2086  # $range is two or three words on purpose
+    for commit in $(git rev-list $range -- secrets/secrets.enc 2>/dev/null); do
+        if git show "$commit:secrets/secrets.enc" 2>/dev/null | grep -q '^# strength: weak'; then
+            weak="$commit"; break 2
+        fi
+    done
+done
+[ -n "$weak" ] || exit 0
+
+printf "\n  commit %s carries a weak-marked secrets/secrets.enc\n" "$weak" >&2
+cat >&2 <<'MSG'
+
+  REFUSING TO PUSH
+
+  secrets/secrets.enc, in a commit about to be pushed, is locked with a
+  passphrase its own strength check marked weak. Pushing it puts the ciphertext wherever this remote is,
+  and a weak passphrase there is worth about an hour of rented GPUs.
+
+  Pick one:
+
+    1. Private repo — then this is fine. Confirm the visibility, then:
+         SRV_ALLOW_WEAK_PUSH=1 git push
+
+    2. Re-lock with a generated passphrase, and it stops being weak:
+         srvlock            # answer Y to "Generate a strong passphrase"
+
+    3. Keep it out of the repo entirely:
+         git rm --cached secrets/secrets.enc
+         echo 'secrets/secrets.enc' >> .gitignore
+         git commit -m "Stop tracking the credential blob"
+       then take it out of the unpushed commits too (git rebase -i), since
+       they still carry it
+       and carry it by hand:
+         scp ~/server/secrets/secrets.enc <host>:~/server/secrets/
+
+MSG
+exit 1

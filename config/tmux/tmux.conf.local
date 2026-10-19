@@ -1,0 +1,49 @@
+# config/tmux/tmux.conf.local — the bundle's tmux settings, on top of gpakosz/.tmux.
+#
+# setup.sh adds these lines as a marked block at the end of your
+# ~/.tmux.conf.local (making the file if there is none), which the vendored
+# ~/.tmux.conf reads last; your own lines above the block stay. They are
+# inline rather than sourced because the vendored config scans that file's
+# text for its tmux_conf_* variables and @plugin lines.
+
+# Right-hand status: the prefix and mouse indicators, network throughput,
+# CPU and memory load, the time, user and host. Through gpakosz's own
+# variable: it builds status-right from this after reading the file, so a
+# plain `set -g status-right` here would be overwritten. The throughput and
+# load come from TPM plugins (`prefix + I`); until they are installed, their
+# segments are empty.
+tmux_conf_theme_status_right=' #{prefix}#{mouse}#{pairing}#{synchronized} #{network_bandwidth} | #($TMUX_PLUGIN_MANAGER_PATH/tmux-mem-cpu-load/tmux-mem-cpu-load --interval 2) | %R | #{username}#{root} | #{hostname} '
+
+# Long-running remote work: keep more scrollback than the upstream 5000.
+set -g history-limit 50000
+
+# Renumber windows after one closes, so the numbers stay contiguous.
+set -g renumber-windows on
+
+# Mouse: the wheel scrolls the pane's history (entering copy mode), a click
+# picks a pane, a drag selects text in one pane and copies it on release.
+# Holding Shift (Option in iTerm2, Fn in Terminal.app) bypasses tmux for the
+# terminal's own selection. `prefix + m` toggles it.
+set -g mouse on
+
+# Copy reaches the clipboard of the computer you are sitting at, even from a
+# cluster over ssh: tmux sends it to the outer terminal as an OSC 52 escape.
+# The Ms override declares that capability for terminals whose terminfo
+# omits it, and works on tmux older than 3.2's terminal-features. The
+# terminal must allow it: iTerm2 "Applications in terminal may access
+# clipboard"; Ghostty, kitty, WezTerm, Alacritty and Windows Terminal do by
+# default; Terminal.app cannot. Where a local clipboard command exists
+# (pbcopy, wl-copy, xsel), the vendored config pipes copies to it as well.
+set -s set-clipboard on
+set -as terminal-overrides ',*:Ms=\E]52;%p1%s;%p2%s\007'
+tmux_conf_copy_to_os_clipboard=true
+
+# Paste: the terminal's own paste (Cmd-V, Ctrl-Shift-V) inserts the
+# clipboard; `prefix + ]` (or `prefix + p`) inserts tmux's latest copy.
+
+# Plugins. The vendored ~/.tmux.conf scans this file for `@plugin` lines and
+# hands them to TPM, so a fresh server picks them up with `prefix + I`.
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'tmux-plugins/tmux-sensible'
+set -g @plugin 'thewtex/tmux-mem-cpu-load'
+set -g @plugin 'xamut/tmux-network-bandwidth'

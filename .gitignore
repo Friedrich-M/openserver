@@ -1,0 +1,45 @@
+# Nothing that carries a credential, and nothing that is yours rather than
+# the machine's.
+#
+# secrets/secrets.enc is your credentials, encrypted; it rides in the zip you
+# build for your own machines (make-bundle.sh walks the directory, not the git
+# index) and never in this repository. Its plaintext form is blocked too.
+secrets/secrets.enc
+secrets/secrets.env
+secrets/*.txt
+.secrets.env
+.secrets.zsh
+secrets.env
+secrets.zsh
+*.local
+!config/tmux/tmux.conf.local
+hosts/*.local.sh
+rclone.conf
+.git-credentials
+auth.json
+.claude.json
+id_*
+*.pem
+*.key
+
+# Build output.
+server.zip
+
+# macOS.
+.DS_Store
+
+# Your settings (lib/config.sh): yours, not the repository's. They travel in
+# the zip make-bundle.sh builds, or by scp, never through git.
+server.json
+
+# Per-machine setup state, written by setup.sh.
+.srv-state
+.srv-config.sh
+
+# A local change log, not part of the repository; releases carry their
+# notes on GitHub (docs/releasing.md, "Versions").
+CHANGELOG.md
+
+# Your own machine profiles and their overrides, never committed: setup.sh
+# reads hosts/local/ beside hosts/, and a bundle you build carries it.
+hosts/local/

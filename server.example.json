@@ -1,0 +1,33 @@
+{
+  "_comment": "Copy to server.json and fill in. Everything here is optional; a missing key means 'ask' or the tool's default. No tokens: those go in ~/.secrets.env.",
+
+  "git": {
+    "name": "Ada Lovelace",
+    "email": "12345+ada@users.noreply.github.com"
+  },
+
+  "github": {
+    "protocol": "ssh"
+  },
+
+  "claude": {
+    "model": "claude-fable-5-1",
+    "settings": {
+      "theme": "dark-ansi",
+      "modelSettings": { "claude-fable-5-1": { "effortLevel": "high" } }
+    }
+  },
+
+  "codex": {
+    "model": "gpt-6-astra",
+    "model_reasoning_effort": "high"
+  },
+
+  "setup": {
+    "conda": false,
+    "gdrive": false,
+    "github": true,
+    "secrets": true,
+    "with": ["rclone", "uv", "claude", "codex"]
+  }
+}

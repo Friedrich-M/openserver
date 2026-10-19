@@ -1,0 +1,16 @@
+# config/git/ignore — global gitignore, copied to ~/.config/git/ignore by setup.sh.
+
+# Agent/editor scratch that should never reach a shared repo.
+**/.claude/settings.local.json
+
+# Cluster job output dropped in the working directory.
+# (%j is SLURM's job-id placeholder; the file on disk is jupyter-12345.log.)
+slurm-*.out
+jupyter-*.log
+
+# Python and editor noise.
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.DS_Store
+*.swp

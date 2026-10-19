@@ -1,0 +1,6 @@
+# Shell scripts and configs must keep LF line endings: a CRLF checkout (on
+# Windows, or with core.autocrlf) breaks every one of them.
+* text=auto eol=lf
+
+# Vendored upstream config, kept out of the language statistics.
+config/tmux/tmux.conf linguist-vendored

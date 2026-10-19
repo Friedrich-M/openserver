@@ -1,0 +1,25 @@
+# config/conda/condarc.template — rendered by server/tools/conda.sh to ~/.condarc.
+#
+# __SCRATCH__ is replaced with the resolved $SCRATCH for this machine, because
+# conda environments are far too big for a /home quota.
+# conda-forge, not `defaults`. tools/conda.sh installs Miniforge, which is
+# built against conda-forge, and mixing the two channels is the usual source
+# of ABI mismatches. `defaults` is also Anaconda's commercial repository,
+# whose terms now require a paid licence for institutional use — this avoids
+# the question entirely.
+channels:
+  - conda-forge
+
+# Never fall back to another channel for a package conda-forge already has.
+channel_priority: strict
+
+envs_dirs:
+  - __SCRATCH__/envs
+# The package cache too: it grows to many GB, and only some clusters link
+# ~/.conda onto scratch.
+pkgs_dirs:
+  - __SCRATCH__/.conda/pkgs
+
+# Do not put (base) on the prompt; powerlevel10k already shows the env.
+changeps1: false
+auto_activate_base: false

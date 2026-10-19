@@ -1,0 +1,41 @@
+# shell/bashrc — what bash gets from the bundle, sourced from your ~/.bashrc.
+#
+# Not copied over ~/.bashrc: setup.sh appends a marked block to the end of
+# the ~/.bashrc you already have (creating one only if there is none), and
+# that block sources this file. Everything in your own ~/.bashrc — the
+# site's /etc/bashrc, a conda init block, your aliases — keeps running first,
+# exactly as before.
+#
+# This file matters even though zsh is the daily shell: `ssh host <command>`,
+# scp/rsync and `srun --pty bash -l` all run bash, and they need the same
+# PATH, $SCRATCH, caches and conda that an interactive zsh has. A SLURM batch
+# script reads no rc file at all (non-interactive bash never does); it gets
+# the same environment because sbatch exports the submitting shell's. A job
+# submitted from a clean environment — cron, a workflow runner — should
+# `source ~/.bashrc` itself.
+
+# Shared environment — the same file ~/.zshrc sources.
+export SRV_DIR="${SRV_DIR:-$HOME/server}"
+[ -r "$SRV_DIR/shell/env.sh" ] && . "$SRV_DIR/shell/env.sh"
+
+
+# ---------------------------------------------------------------------------
+# Hand interactive logins to zsh (keep last)
+# ---------------------------------------------------------------------------
+# Guarded so it never fires where it would break things:
+#   $- contains i  -> interactive only (not SLURM scripts, not scp)
+#   -t 0           -> a real terminal is attached
+#   SRV_NO_ZSH     -> escape hatch: `SRV_NO_ZSH=1 bash` stays in bash
+# and only when zsh is installed (a machine without it stays in bash) and zsh
+# did not start this bash (typing `bash` at a zsh prompt means bash).
+_srv_parent="$(ps -o comm= -p "$PPID" 2>/dev/null)"
+if [[ $- == *i* ]] && [[ -t 0 ]] &&
+   [[ -z ${ZSH_VERSION:-} ]] && [[ -z ${SRV_NO_ZSH:-} ]] &&
+   [[ "${_srv_parent##*/}" != *zsh ]] &&
+   command -v zsh >/dev/null 2>&1
+then
+    unset _srv_parent
+    exec zsh
+fi
+unset _srv_parent
+true

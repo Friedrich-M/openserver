@@ -1,0 +1,39 @@
+# config/git/gitconfig — the bundle's git settings.
+#
+# Read through an include that setup.sh puts at the top of your own
+# ~/.gitconfig, so anything you set below it there wins. No identity here:
+# user.name and user.email live in ~/.gitconfig.local, which tools/github.sh
+# writes on each machine and the include at the bottom reads. No editor
+# either: git uses $EDITOR, which shell/zshrc sets only where you have none.
+# No credential helper: GitHub goes through a per-machine SSH key or gh
+# (tools/github.sh), and a plaintext store is not a default worth sharing.
+
+[core]
+	excludesfile = ~/.config/git/ignore
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = false
+
+[push]
+	default = simple
+	autoSetupRemote = true
+
+[color]
+	ui = true
+
+[filter "lfs"]
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+
+[alias]
+	st = status -sb
+	lg = log --oneline --graph --decorate -20
+	last = log -1 --stat
+
+[include]
+	path = ~/.gitconfig.local
